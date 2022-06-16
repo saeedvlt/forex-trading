@@ -1,0 +1,133 @@
+import pandas as pd
+import numpy as np
+import csv
+
+#Importing a csv file, which is exported from MetaTrader 4 and adding column headers to it
+
+rates = pd.read_csv('EURAUD1.csv')
+rates.columns = ['Date','Time','Rate','Rate2','Rate3','Rate4','rnNo']
+rates.head(11)
+#defining variable which are going to be used later; 'pos' is a list
+
+net_balance = 10000
+top_limit= 1.78
+bottom_limit= 1.65
+interval= 5
+closing_pip= 15
+profit=0
+open_pos= 0  #number of positions openned in total
+close_pos= 0
+active_pos=0
+buy_lot=0
+sell_lot=0
+default_lot=0.01
+row_num=0
+last_pos_seq= 0
+pos = []
+last_pos_rate = 0
+next_order_rate = 1.7430
+current_rate = rates.loc[row_num, 'Rate']
+
+# open position class will open a position based on the data it gets.
+# It returns a list of seq, date, time, rate, direc, lot. 
+# and a it affects some variables: op_po, ac_po, b_lot, s_lot, row
+
+class open_position:
+    def __init__(self, direc, open_pos, active_pos, buy_lot, sell_lot, pos_lot, 
+                 row_num, pos_rate, pos_date, pos_time, last_pos_seq):
+        self.open_pos = open_pos
+        self.active_pos= active_pos
+        self.buy_lot=buy_lot
+        self.sell_lot = sell_lot
+        self.pos_lot = pos_lot
+        self.row_num=row_num
+        self.last_pos_seq = last_pos_seq
+        self.pos_rate = pos_rate
+        self.pos_date = pos_date
+        self.pos_time = pos_time
+        self.direc = direc
+        
+    def trade(self):
+        
+        if self.direc == 'sell' or self.direc == 'short':
+            s_lot = self.sell_lot + self.pos_lot
+        else: 
+            b_lot = self.buy_lot + self.pos_lot
+        row = self.row_num + 1
+        pos_seq = self.last_pos_seq + 1
+        op_po = self.open_pos + 1
+        ac_po = self.active_pos + 1
+        pos_rate= self.pos_rate
+        pos_date= self.pos_date
+        pos_time = self.pos_time
+        pos_info = pos_seq, pos_date, pos_time, pos_rate, self.direc, self.pos_lot
+        
+        return pos_info, op_po, ac_po, b_lot, s_lot, row 
+
+
+
+# if the rate is in the determined range and under the 5 pip below the last position,
+# it executes the open_position class and goes to next row
+# Else it goes to the next row and tries this with it
+
+# REMEMBER TO MODIFY IT TO OPEN POSITION WHENEVER IT GOES DOWN, EVENIF THE LAST ORDER IS LOWER THAN THE PLACE WHERE
+# IT IS NOW! UNDER THE CONDITION THAT IT IS IN THE DETERMINED RANGE
+
+
+while row_num < 10000 and current_rate > bottom_limit and current_rate < top_limit :
+    if current_rate <= next_order_rate :
+        op_s=open_position('short', open_pos, active_pos, buy_lot, sell_lot, default_lot, 
+                            row_num, rates.loc[row_num, 'Rate'], rates.loc[row_num, 'Date'], 
+                            rates.loc[row_num, 'Time'], last_pos_seq)
+        pos_data, open_pos, active_pos, buy_lot, sell_lot, row_num= op_s.trade()
+        pos.append(pos_data)
+        last_pos_seq = pos_data[0]
+        last_pos_rate = pos_data[3]
+        next_order_rate = last_pos_rate - 0.0005
+        current_rate = rates.loc[row_num, 'Rate']
+    else :
+        row_num = row_num + 1
+        current_rate = rates.loc[row_num, 'Rate']
+print(pos_data, open_pos, active_pos, buy_lot, sell_lot, row_num)
+print(last_pos_rate, next_order_rate, current_rate, row_num)
+
+
+
+# Not yet complete; the whole thing needs editing
+
+class close_position:
+    def __init__(self, direc, close_pos, active_pos, buy_lot, sell_lot, pos_lot, 
+                 pos_row_num, row_num, pos_close_rate, pos_close_date, pos_close_time):
+        self.open_pos = close_pos
+        self.active_pos= active_pos
+        self.buy_lot=buy_lot
+        self.sell_lot = sell_lot
+        self.pos_lot = pos_lot
+        self.pos_row_num = pos_row_num
+        self.row_num = row_num
+        self.pos_close_rate = pos_close_rate
+        self.pos_close_date = pos_close_date
+        self.pos_close_time = pos_close_time
+        self.direc = direc
+                
+    def close_pos(self):
+        if self.direc == 'sell' or self.direc == 'short':
+            s_lot = self.sell_lot - self.pos_lot
+        else: 
+            b_lot = self.buy_lot - self.pos_lot
+        row = self.row_num + 1
+        pos_row = self.pos_row_num + 1
+        cl_po = self.close_pos + 1
+        ac_po = self.active_pos - 1
+        pos_close_rate= self.pos_rate
+        pos_close_date= self.pos_date
+        pos_close_time = self.pos_time
+        pos_info = pos_seq, pos_date, pos_time, pos_rate, self.direc, self.pos_lot
+        
+        return pos_info, cl_po, ac_po, b_lot, s_lot, row, pos_row 
+all_pos = pd.DataFrame(pos, columns=['seq', 'Date', 'Time', 'Rate', 'Direction', 'lot'] )
+all_pos.head(15)
+
+
+
+
