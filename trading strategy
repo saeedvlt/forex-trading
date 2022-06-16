@@ -4,14 +4,14 @@ import csv
 
 #Importing a csv file, which is exported from MetaTrader 4 and adding column headers to it
 
-rates = pd.read_csv('EURAUD1.csv')
+rates = pd.read_csv('gold.csv')
 rates.columns = ['Date','Time','Rate','Rate2','Rate3','Rate4','rnNo']
 rates.head(11)
 #defining variable which are going to be used later; 'pos' is a list
 
 net_balance = 10000
-top_limit= 1.78
-bottom_limit= 1.65
+top_limit= 1780
+bottom_limit= 1659
 interval= 5
 closing_pip= 15
 profit=0
@@ -25,7 +25,7 @@ row_num=0
 last_pos_seq= 0
 pos = []
 last_pos_rate = 0
-next_order_rate = 1.7430
+next_order_rate = 1780
 current_rate = rates.loc[row_num, 'Rate']
 
 # open position class will open a position based on the data it gets.
